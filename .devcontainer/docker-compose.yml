@@ -1,0 +1,34 @@
+# Dev Container stack: MongoDB + devcontainer (Go/Node via devcontainer.json features).
+services:
+  devcontainer:
+    image: mcr.microsoft.com/devcontainers/base:jammy
+    volumes:
+      - ..:/workspaces/Mini-Shoping-site:cached
+    command: sleep infinity
+    networks:
+      - mini_shop_dev
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  mongo:
+    image: mongo:7
+    volumes:
+      - mongo_dev_data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - mini_shop_dev
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+networks:
+  mini_shop_dev:
+    driver: bridge
+
+volumes:
+  mongo_dev_data:

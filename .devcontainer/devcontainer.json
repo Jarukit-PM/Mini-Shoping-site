@@ -1,0 +1,31 @@
+{
+  "name": "Mini Shopping Site (MongoDB + Go + Node)",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "devcontainer",
+  "workspaceFolder": "/workspaces/Mini-Shoping-site",
+  "features": {
+    "ghcr.io/devcontainers/features/go:1": {
+      "version": "1.24"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22"
+    }
+  },
+  "remoteEnv": {
+    "MONGODB_URI": "mongodb://mongo:27017",
+    "MONGODB_DATABASE": "mini_shop"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-azuretools.vscode-docker",
+        "golang.go"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+  "remoteUser": "vscode",
+  "postCreateCommand": "npm ci --prefix apps/web && echo 'Web deps installed for this container OS/CPU. MONGODB_URI=mongodb://mongo:27017 in remoteEnv; host Mongo: localhost:27017 — see README.'"
+}

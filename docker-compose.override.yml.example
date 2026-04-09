@@ -1,0 +1,11 @@
+# Copy to docker-compose.override.yml (gitignored by convention) to override ports, env, or mounts for local development.
+#
+# Example: mount the Next.js app for hot reload (requires a dev-oriented Dockerfile or `command: npm run dev`).
+#
+# services:
+#   web:
+#     volumes:
+#       - ./apps/web:/app
+#     command: npm run dev
+
+services: {}
