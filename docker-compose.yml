@@ -23,6 +23,10 @@ services:
       MONGODB_URI: mongodb://mongo:27017
       MONGODB_DATABASE: mini_shop
       CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
+      # Optional: session cookie lifetime in hours (default 24)
+      # SESSION_TTL_HOURS: "24"
     depends_on:
       mongo:
         condition: service_healthy

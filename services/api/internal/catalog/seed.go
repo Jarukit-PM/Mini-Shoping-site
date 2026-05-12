@@ -6,7 +6,25 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+// EnsureCatalogIndexes creates a partial unique index on sku for active (non–soft-deleted) products.
+func EnsureCatalogIndexes(ctx context.Context, db *mongo.Database) error {
+	coll := db.Collection("products")
+	_, err := coll.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "sku", Value: 1}},
+		Options: options.Index().
+			SetUnique(true).
+			SetPartialFilterExpression(bson.M{
+				"$or": []bson.M{
+					{"deletedAt": bson.M{"$exists": false}},
+					{"deletedAt": nil},
+				},
+			}),
+	})
+	return err
+}
 
 // EnsureDemoProducts inserts a small demo set when the collection is empty.
 func EnsureDemoProducts(ctx context.Context, db *mongo.Database) error {

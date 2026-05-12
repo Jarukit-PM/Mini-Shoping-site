@@ -1,6 +1,8 @@
 package catalog
 
 import (
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -13,4 +15,7 @@ type Product struct {
 	Currency    string             `json:"currency" bson:"currency"`
 	SKU         string             `json:"sku" bson:"sku"`
 	Stock       int32              `json:"stock" bson:"stock"`
+	Category    string             `json:"category,omitempty" bson:"category,omitempty"`
+	ImageURL    string             `json:"imageUrl,omitempty" bson:"imageUrl,omitempty"`
+	DeletedAt   *time.Time         `json:"deletedAt,omitempty" bson:"deletedAt,omitempty"`
 }

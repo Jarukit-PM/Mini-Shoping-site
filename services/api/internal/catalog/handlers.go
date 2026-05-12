@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -22,44 +23,39 @@ type productJSON struct {
 	Currency    string `json:"currency"`
 	SKU         string `json:"sku"`
 	Stock       int32  `json:"stock"`
+	Category    string `json:"category,omitempty"`
+	ImageURL    string `json:"imageUrl,omitempty"`
 }
 
-// RegisterRoutes mounts catalog endpoints under the given router (caller should use a `/v1` sub-router).
-func RegisterRoutes(r chiRouter, db *mongo.Database) {
+// RegisterPublicRoutes mounts public catalog endpoints under `/v1`.
+func RegisterPublicRoutes(r chi.Router, db *mongo.Database) {
 	r.Get("/products", listProducts(db))
-}
-
-// chiRouter is the minimal surface from chi we need (easier to test than concrete *chi.Mux).
-type chiRouter interface {
-	Get(pattern string, h http.HandlerFunc)
 }
 
 func listProducts(db *mongo.Database) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx, cancel := context.WithTimeout(req.Context(), 10*time.Second)
 		defer cancel()
-		cur, err := db.Collection("products").Find(ctx, bson.D{})
+		filter := bson.M{
+			"$or": []bson.M{
+				{"deletedAt": nil},
+				{"deletedAt": bson.M{"$exists": false}},
+			},
+		}
+		cur, err := db.Collection("products").Find(ctx, filter)
 		if err != nil {
-			http.Error(w, `{"error":"database_error"}`, http.StatusInternalServerError)
+			http.Error(w, `{"error":{"code":"database_error","message":"query failed"}}`, http.StatusInternalServerError)
 			return
 		}
 		defer func() { _ = cur.Close(ctx) }()
 		var raw []Product
 		if err := cur.All(ctx, &raw); err != nil {
-			http.Error(w, `{"error":"database_error"}`, http.StatusInternalServerError)
+			http.Error(w, `{"error":{"code":"database_error","message":"decode failed"}}`, http.StatusInternalServerError)
 			return
 		}
 		out := make([]productJSON, 0, len(raw))
 		for _, p := range raw {
-			out = append(out, productJSON{
-				ID:          p.ID.Hex(),
-				Name:        p.Name,
-				Description: p.Description,
-				PriceCents:  p.PriceCents,
-				Currency:    p.Currency,
-				SKU:         p.SKU,
-				Stock:       p.Stock,
-			})
+			out = append(out, productToJSON(p))
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(listResponse{Items: out})

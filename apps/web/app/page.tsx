@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { apiBaseUrl } from "@/lib/api";
+import { authedFetch } from "@/lib/api-server";
 
 type HealthResponse = {
   status: string;
@@ -18,6 +20,22 @@ type Product = {
 type ProductsResponse = {
   items: Product[];
 };
+
+type Me = {
+  id: string;
+  email: string;
+  role: string;
+};
+
+async function fetchMe(): Promise<Me | null> {
+  try {
+    const res = await authedFetch("/v1/auth/me");
+    if (!res.ok) return null;
+    return (await res.json()) as Me;
+  } catch {
+    return null;
+  }
+}
 
 async function fetchHealth(): Promise<HealthResponse | null> {
   const base = apiBaseUrl();
@@ -56,7 +74,7 @@ function formatPrice(cents: number, currency: string): string {
 }
 
 export default async function Home() {
-  const [health, products] = await Promise.all([fetchHealth(), fetchProducts()]);
+  const [health, products, me] = await Promise.all([fetchHealth(), fetchProducts(), fetchMe()]);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
@@ -78,6 +96,57 @@ export default async function Home() {
           : Next.js, Go API, MongoDB, Docker Compose, and Dev Container — with the domain focused on a product
           catalog.
         </p>
+
+        {me ? (
+          <div className="mt-6 flex flex-col gap-3 rounded-xl border border-[var(--border)] bg-[var(--accent-muted)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-slate-800 dark:text-slate-100">
+              <span className="text-slate-600 dark:text-slate-400">Signed in as</span>{" "}
+              <span className="font-semibold">{me.email}</span>
+              {me.role === "admin" ? (
+                <span className="ml-2 rounded-md bg-[var(--card)] px-2 py-0.5 text-xs font-medium text-[var(--accent)]">
+                  Admin
+                </span>
+              ) : null}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {me.role === "admin" ? (
+                <Link
+                  className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white shadow-sm hover:opacity-90"
+                  href="/admin"
+                >
+                  Open admin
+                </Link>
+              ) : null}
+              <Link
+                className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800"
+                href="/login"
+              >
+                Account / sign-in page
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-6 flex flex-col gap-4 rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="font-medium text-[var(--foreground)]">Sign in to test the admin console</p>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                Use the same credentials the Go API reads: copy{" "}
+                <code className="rounded bg-[var(--accent-muted)] px-1 font-mono text-xs">.env.example</code>{" "}
+                to <code className="font-mono text-xs">.env</code> at the repo root (defaults{" "}
+                <code className="font-mono text-xs">admin@example.com</code> /{" "}
+                <code className="font-mono text-xs">changeme</code>), then restart the API so it syncs the
+                password. <span className="text-slate-500">In non-production, the API updates that user’s password from env on startup.</span>
+              </p>
+            </div>
+            <Link
+              className="shrink-0 rounded-lg bg-[var(--accent)] px-5 py-2.5 text-center text-sm font-semibold text-white shadow-sm hover:opacity-90"
+              href="/login"
+            >
+              Log in
+            </Link>
+          </div>
+        )}
+
         <dl className="mt-6 grid gap-4 sm:grid-cols-3">
           <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 shadow-sm">
             <dt className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">

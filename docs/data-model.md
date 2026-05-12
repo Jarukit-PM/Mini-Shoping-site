@@ -27,6 +27,29 @@ Session- or user-scoped cart: `userId` or `sessionId`, `items[]` with `productId
 
 `orderId`, `status`, `lineItems[]`, `totals`, `createdAt`. Consider embedding vs referencing products.
 
-## `users` (planned)
+## `users` (implemented)
 
-Email, password hash, roles (`customer`, `admin`) when authentication is added.
+| Field | Type | Notes |
+|-------|------|--------|
+| `_id` | ObjectId | Primary key. |
+| `email` | string | Unique index; normalized lowercase. |
+| `passwordHash` | string | bcrypt hash. |
+| `role` | string | `customer` \| `admin`. |
+| `createdAt` | Date | UTC. |
+
+## `sessions` (implemented — login)
+
+Opaque **session token** in the httpOnly `auth` cookie; each login inserts a row here. Middleware validates by lookup + `expiresAt`.
+
+| Field | Type | Notes |
+|-------|------|--------|
+| `_id` | ObjectId | Primary key. |
+| `userId` | ObjectId | FK to `users`. |
+| `role` | string | Snapshot at login (used by `RequireAuth` without an extra user read). |
+| `token` | string | Random hex (64 chars); **unique index**. |
+| `expiresAt` | Date | TTL index (`expireAfterSeconds: 0`) removes expired sessions. |
+| `createdAt` | Date | UTC. |
+
+## Product delete (UC-10)
+
+**Soft delete**: `products.deletedAt` set to a timestamp; public `GET /v1/products` omits those rows. Partial unique index on `sku` applies only to active (non-deleted) documents.

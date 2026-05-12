@@ -12,7 +12,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Jarukit-PM/Mini-Shoping-site/services/api/internal/auth"
 	"github.com/Jarukit-PM/Mini-Shoping-site/services/api/internal/catalog"
+	"github.com/Jarukit-PM/Mini-Shoping-site/services/api/internal/orderadmin"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -117,9 +119,21 @@ func main() {
 		} else {
 			mongoStatus = "connected"
 			db = mongoClient.Database(cfg.MongoDBName)
-			seedCtx, seedCancel := context.WithTimeout(ctx, 10*time.Second)
+			seedCtx, seedCancel := context.WithTimeout(ctx, 15*time.Second)
+			if err := catalog.EnsureCatalogIndexes(seedCtx, db); err != nil {
+				slog.Error("catalog indexes failed", "error", err)
+			}
 			if err := catalog.EnsureDemoProducts(seedCtx, db); err != nil {
 				slog.Error("catalog seed failed", "error", err)
+			}
+			if err := auth.EnsureBootstrapAdmin(seedCtx, db); err != nil {
+				slog.Error("bootstrap admin failed", "error", err)
+			}
+			if err := auth.SyncAdminPasswordFromEnv(seedCtx, db); err != nil {
+				slog.Error("admin password sync failed", "error", err)
+			}
+			if err := auth.EnsureSessionIndexes(seedCtx, db); err != nil {
+				slog.Error("session indexes failed", "error", err)
 			}
 			seedCancel()
 			slog.Info("mongodb reachable", "db", cfg.MongoDBName)
@@ -135,7 +149,7 @@ func main() {
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   cfg.CORSOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Request-ID"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Request-ID", "Cookie"},
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
@@ -158,8 +172,22 @@ func main() {
 	})
 
 	if db != nil {
+		cookieSecure := auth.CookieSecureFromEnv()
+		authOpts := auth.Options{DB: db, CookieSecure: cookieSecure}
+
 		r.Route("/v1", func(r chi.Router) {
-			catalog.RegisterRoutes(r, db)
+			catalog.RegisterPublicRoutes(r, db)
+			auth.RegisterRoutes(r, db, authOpts)
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireAuth(db))
+				auth.RegisterMeRoute(r, db)
+			})
+			r.Route("/admin", func(r chi.Router) {
+				r.Use(auth.RequireAuth(db))
+				r.Use(auth.RequireAdmin)
+				catalog.RegisterAdminRoutes(r, db)
+				orderadmin.RegisterRoutes(r, db)
+			})
 		})
 	}
 
