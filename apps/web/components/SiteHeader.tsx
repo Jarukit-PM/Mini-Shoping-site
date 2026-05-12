@@ -38,12 +38,20 @@ export async function SiteHeader() {
             Cart
           </Link>
           {!me ? (
-            <Link
-              className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-white shadow-sm hover:opacity-90"
-              href="/login"
-            >
-              Log in
-            </Link>
+            <>
+              <Link
+                className="text-slate-600 hover:text-[var(--accent)] dark:text-slate-300"
+                href="/register"
+              >
+                Sign up
+              </Link>
+              <Link
+                className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-white shadow-sm hover:opacity-90"
+                href="/login"
+              >
+                Log in
+              </Link>
+            </>
           ) : null}
           {me ? (
             <Link className="text-slate-600 hover:text-[var(--accent)] dark:text-slate-300" href="/orders">

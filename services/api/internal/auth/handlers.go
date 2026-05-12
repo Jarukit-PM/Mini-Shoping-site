@@ -37,6 +37,7 @@ func RegisterRoutes(r interface {
 	Post(pattern string, h http.HandlerFunc)
 }, db *mongo.Database, opts Options) {
 	r.Post("/auth/login", loginHandler(db, opts))
+	r.Post("/auth/register", RegisterUserHandler(db, opts))
 	r.Post("/auth/logout", logoutHandler(db, opts))
 }
 

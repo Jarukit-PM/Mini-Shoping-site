@@ -9,5 +9,6 @@ Design documentation for the **Mini Shopping Site** monorepo (aligned with the [
 | [data-model.md](./data-model.md) | MongoDB collections for catalog, cart, and orders (MVP → growth). |
 | [diagrams.md](./diagrams.md) | Mermaid diagrams: context, containers, sequences. |
 | [roadmap.md](./roadmap.md) | Phases after the baseline: cart, checkout, auth, tests, CI. |
+| [testing.md](./testing.md) | How to run automated tests (web + API) and what each suite covers. |
 
 For how to run the stack locally, see the [root README](../README.md).

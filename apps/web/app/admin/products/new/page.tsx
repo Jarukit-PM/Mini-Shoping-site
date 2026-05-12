@@ -4,6 +4,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { apiBaseUrl } from "@/lib/api";
+import {
+  parseCreateProductResult,
+  postCreateAdminProduct,
+  validateNewProductForm,
+} from "@/lib/admin-product-client";
 
 export default function NewProductPage() {
   const router = useRouter();
@@ -23,48 +28,34 @@ export default function NewProductPage() {
     e.preventDefault();
     setFieldErrors({});
     setMessage(null);
-    const priceNum = Number(priceBaht);
-    if (!Number.isFinite(priceNum) || priceNum <= 0) {
-      setFieldErrors({ priceCents: "ราคาสินค้าต้องมากกว่า 0" });
-      return;
-    }
-    const priceCents = Math.round(priceNum * 100);
-    const stockNum = Number.parseInt(stock, 10);
-    if (!Number.isFinite(stockNum) || stockNum < 0) {
-      setFieldErrors({ stock: "stock must be >= 0" });
+    const validated = validateNewProductForm(priceBaht, stock);
+    if (!validated.ok) {
+      setFieldErrors(validated.fieldErrors);
       return;
     }
     setPending(true);
     try {
-      const res = await fetch(`${apiBaseUrl()}/v1/admin/products`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          description,
-          category,
-          imageUrl,
-          sku,
-          currency: currency || "THB",
-          priceCents,
-          stock: stockNum,
-        }),
+      const res = await postCreateAdminProduct(apiBaseUrl(), {
+        name,
+        description,
+        category,
+        imageUrl,
+        sku,
+        currency: currency || "THB",
+        priceCents: validated.priceCents,
+        stock: validated.stockNum,
       });
-      if (res.status === 201) {
+      const body = await res.json().catch(() => ({}));
+      const outcome = parseCreateProductResult(res.status, body);
+      if (outcome.type === "created") {
         router.push("/admin/products");
         router.refresh();
         return;
       }
-      const body = (await res.json()) as {
-        error?: { code?: string; message?: string; fields?: Record<string, string> };
-      };
-      if (body.error?.fields) setFieldErrors(body.error.fields);
-      if (body.error?.code === "invalid_price" || body.error?.fields?.priceCents) {
-        setMessage(body.error.fields?.priceCents ?? body.error.message ?? "ราคาสินค้าต้องมากกว่า 0");
-      } else {
-        setMessage(body.error?.message ?? "Could not create product");
+      if (Object.keys(outcome.fieldErrors).length > 0) {
+        setFieldErrors(outcome.fieldErrors);
       }
+      setMessage(outcome.message);
     } catch {
       setMessage("Could not reach the API");
     } finally {

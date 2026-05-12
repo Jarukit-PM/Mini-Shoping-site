@@ -6,6 +6,8 @@ Full-stack monorepo for a **mini e-commerce** OOAD project: **Next.js** (`apps/w
 
 Design, API, and roadmap (English): **[docs/README.md](./docs/README.md)** — catalog data model, `/v1/products`, and next phases (cart, orders, auth).
 
+**Automated tests:** **[docs/testing.md](./docs/testing.md)** — commands (`apps/web`, `services/api`) and what each test file covers.
+
 ## Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) with Compose v2.

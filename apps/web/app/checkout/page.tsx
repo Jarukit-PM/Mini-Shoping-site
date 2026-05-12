@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { apiBaseUrl } from "@/lib/api";
+import { parsePlaceOrderResult, postPlaceOrder } from "@/lib/checkout-client";
 
 type CartItem = {
   productId: string;
@@ -70,49 +71,28 @@ function CheckoutPageContent() {
     setDetails(null);
     setSubmitting(true);
     try {
-      const res = await fetch(`${apiBaseUrl()}/v1/orders`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          shippingAddress: {
-            name,
-            line1,
-            city,
-            postal,
-            country,
-          },
-          payment: { cardNumber, expiry, cvv },
-        }),
-      });
-      const body = (await res.json().catch(() => null)) as {
-        orderId?: string;
-        error?: { code?: string; message?: string; details?: string[] };
-      } | null;
-      if (res.status === 201 && body?.orderId) {
-        router.push(`/checkout/success/${body.orderId}`);
-        return;
+      const res = await postPlaceOrder(apiBaseUrl(), { name, line1, city, postal, country }, { cardNumber, expiry, cvv });
+      const body = await res.json().catch(() => null);
+      const outcome = parsePlaceOrderResult(res.status, body);
+      switch (outcome.type) {
+        case "created":
+          router.push(`/checkout/success/${outcome.orderId}`);
+          return;
+        case "payment_declined":
+          setErr(outcome.message);
+          setStep(2);
+          return;
+        case "out_of_stock":
+          router.push(`/cart?msg=${encodeURIComponent(outcome.redirectMessage)}`);
+          return;
+        case "empty_cart":
+          router.push("/cart?msg=" + encodeURIComponent("Your cart is empty."));
+          return;
+        case "error":
+          setErr(outcome.message);
+          setDetails(outcome.details);
+          return;
       }
-      if (res.status === 402) {
-        setErr(body?.error?.message ?? "Payment was declined");
-        setStep(2);
-        return;
-      }
-      if (res.status === 409) {
-        const d = body?.error?.details ?? [];
-        const msg =
-          d.length > 0
-            ? `Stock issue: ${d.join("; ")}`
-            : body?.error?.message ?? "Not enough stock";
-        router.push(`/cart?msg=${encodeURIComponent(msg)}`);
-        return;
-      }
-      if (res.status === 400 && body?.error?.code === "empty_cart") {
-        router.push("/cart?msg=" + encodeURIComponent("Your cart is empty."));
-        return;
-      }
-      setErr(body?.error?.message ?? "Checkout failed");
-      setDetails(body?.error?.details ?? null);
     } catch {
       setErr("Could not reach the API");
     } finally {

@@ -10,6 +10,16 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+// adminEnvCredentials reads ADMIN_EMAIL / ADMIN_PASSWORD from the environment
+// (same rules as .env.example): email is trimmed and lowercased; password is trimmed;
+// ok is false if either value is missing after trim.
+func adminEnvCredentials() (email string, pass string, ok bool) {
+	email = strings.TrimSpace(strings.ToLower(os.Getenv("ADMIN_EMAIL")))
+	pass = strings.TrimSpace(os.Getenv("ADMIN_PASSWORD"))
+	ok = email != "" && pass != ""
+	return
+}
+
 // EnsureBootstrapAdmin seeds the first admin when `users` is empty (Q-01).
 func EnsureBootstrapAdmin(ctx context.Context, db *mongo.Database) error {
 	if err := EnsureUserIndexes(ctx, db); err != nil {
@@ -22,9 +32,8 @@ func EnsureBootstrapAdmin(ctx context.Context, db *mongo.Database) error {
 	if n > 0 {
 		return nil
 	}
-	email := strings.TrimSpace(strings.ToLower(os.Getenv("ADMIN_EMAIL")))
-	pass := strings.TrimSpace(os.Getenv("ADMIN_PASSWORD"))
-	if email == "" || pass == "" {
+	email, pass, ok := adminEnvCredentials()
+	if !ok {
 		slog.Warn("users collection empty; set ADMIN_EMAIL and ADMIN_PASSWORD to seed bootstrap admin")
 		return nil
 	}
@@ -51,9 +60,8 @@ func SyncAdminPasswordFromEnv(ctx context.Context, db *mongo.Database) error {
 	if strings.EqualFold(strings.TrimSpace(os.Getenv("APP_ENV")), "production") {
 		return nil
 	}
-	email := strings.TrimSpace(strings.ToLower(os.Getenv("ADMIN_EMAIL")))
-	pass := strings.TrimSpace(os.Getenv("ADMIN_PASSWORD"))
-	if email == "" || pass == "" {
+	email, pass, ok := adminEnvCredentials()
+	if !ok {
 		return nil
 	}
 	hash, err := HashPassword(pass)
