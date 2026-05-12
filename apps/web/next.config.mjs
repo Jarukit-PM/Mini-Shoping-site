@@ -37,6 +37,22 @@ applySelectedKeysFromRootEnv();
 /** @type {import("next").NextConfig} */
 const nextConfig = {
   output: "standalone",
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "placehold.co",
+      },
+      {
+        protocol: "https",
+        hostname: "upload.wikimedia.org",
+      },
+      {
+        protocol: "https",
+        hostname: "cdn.shopify.com",
+      },
+    ],
+  },
   serverExternalPackages: [
     "lightningcss",
     "lightningcss-darwin-arm64",

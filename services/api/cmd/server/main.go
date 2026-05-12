@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/Jarukit-PM/Mini-Shoping-site/services/api/internal/auth"
+	"github.com/Jarukit-PM/Mini-Shoping-site/services/api/internal/cart"
 	"github.com/Jarukit-PM/Mini-Shoping-site/services/api/internal/catalog"
 	"github.com/Jarukit-PM/Mini-Shoping-site/services/api/internal/orderadmin"
 	"github.com/go-chi/chi/v5"
@@ -120,8 +121,11 @@ func main() {
 			mongoStatus = "connected"
 			db = mongoClient.Database(cfg.MongoDBName)
 			seedCtx, seedCancel := context.WithTimeout(ctx, 15*time.Second)
-			if err := catalog.EnsureCatalogIndexes(seedCtx, db); err != nil {
-				slog.Error("catalog indexes failed", "error", err)
+			if err := catalog.EnsureIndexes(seedCtx, db); err != nil {
+				slog.Error("catalog ensure indexes failed", "error", err)
+			}
+			if err := cart.EnsureIndexes(seedCtx, db); err != nil {
+				slog.Error("cart ensure indexes failed", "error", err)
 			}
 			if err := catalog.EnsureDemoProducts(seedCtx, db); err != nil {
 				slog.Error("catalog seed failed", "error", err)
@@ -149,7 +153,7 @@ func main() {
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   cfg.CORSOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Request-ID", "Cookie"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Request-ID", "Cookie", "X-Stub-User-Id"},
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
@@ -178,6 +182,7 @@ func main() {
 		r.Route("/v1", func(r chi.Router) {
 			catalog.RegisterPublicRoutes(r, db)
 			auth.RegisterRoutes(r, db, authOpts)
+			cart.RegisterRoutes(r, db, auth.RequireAuth(db))
 			r.Group(func(r chi.Router) {
 				r.Use(auth.RequireAuth(db))
 				auth.RegisterMeRoute(r, db)

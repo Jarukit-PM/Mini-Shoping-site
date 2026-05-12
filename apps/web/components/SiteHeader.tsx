@@ -31,6 +31,12 @@ export async function SiteHeader() {
           >
             Store
           </Link>
+          <Link
+            className="text-slate-600 hover:text-[var(--accent)] dark:text-slate-300"
+            href="/cart"
+          >
+            Cart
+          </Link>
           {!me ? (
             <Link
               className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-white shadow-sm hover:opacity-90"
