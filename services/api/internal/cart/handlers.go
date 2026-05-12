@@ -29,6 +29,7 @@ type cartResponse struct {
 	Currency        string             `json:"currency"`
 }
 
+// RegisterRoutes mounts /cart under /v1 (caller is already under /v1).
 func RegisterRoutes(r chi.Router, db *mongo.Database, requireAuth func(http.Handler) http.Handler) {
 	svc := New(db)
 	r.Route("/cart", func(r chi.Router) {
@@ -54,7 +55,6 @@ func getCartHandler(svc *Service, db *mongo.Database) http.HandlerFunc {
 			return
 		}
 
-		// enrich products
 		ids := make([]primitive.ObjectID, 0, len(cart.Items))
 		for _, it := range cart.Items {
 			ids = append(ids, it.ProductID)
@@ -65,6 +65,7 @@ func getCartHandler(svc *Service, db *mongo.Database) http.HandlerFunc {
 			defer cancel()
 			cur, err := db.Collection("products").Find(ctx, bson.M{"_id": bson.M{"$in": ids}})
 			if err == nil {
+				defer func() { _ = cur.Close(ctx) }()
 				var prods []catalog.Product
 				_ = cur.All(ctx, &prods)
 				for _, p := range prods {
@@ -74,7 +75,7 @@ func getCartHandler(svc *Service, db *mongo.Database) http.HandlerFunc {
 		}
 
 		out := make([]cartLineResponse, 0, len(cart.Items))
-		var grand int64 = 0
+		var grand int64
 		currency := ""
 		for _, it := range cart.Items {
 			p := prodMap[it.ProductID]
@@ -125,7 +126,6 @@ func addItemHandler(svc *Service, db *mongo.Database) http.HandlerFunc {
 				return
 			}
 			if err == ErrOutOfStock {
-				// try to fetch available
 				var p struct {
 					Stock int32 `bson:"stock"`
 				}
@@ -140,7 +140,6 @@ func addItemHandler(svc *Service, db *mongo.Database) http.HandlerFunc {
 			writeError(w, 500, "server_error", err.Error(), nil)
 			return
 		}
-		// return updated cart
 		getCartHandler(svc, db)(w, r)
 	}
 }

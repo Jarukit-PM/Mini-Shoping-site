@@ -15,6 +15,7 @@ import (
 	"github.com/Jarukit-PM/Mini-Shoping-site/services/api/internal/auth"
 	"github.com/Jarukit-PM/Mini-Shoping-site/services/api/internal/cart"
 	"github.com/Jarukit-PM/Mini-Shoping-site/services/api/internal/catalog"
+	"github.com/Jarukit-PM/Mini-Shoping-site/services/api/internal/order"
 	"github.com/Jarukit-PM/Mini-Shoping-site/services/api/internal/orderadmin"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -124,9 +125,6 @@ func main() {
 			if err := catalog.EnsureIndexes(seedCtx, db); err != nil {
 				slog.Error("catalog ensure indexes failed", "error", err)
 			}
-			if err := cart.EnsureIndexes(seedCtx, db); err != nil {
-				slog.Error("cart ensure indexes failed", "error", err)
-			}
 			if err := catalog.EnsureDemoProducts(seedCtx, db); err != nil {
 				slog.Error("catalog seed failed", "error", err)
 			}
@@ -138,6 +136,12 @@ func main() {
 			}
 			if err := auth.EnsureSessionIndexes(seedCtx, db); err != nil {
 				slog.Error("session indexes failed", "error", err)
+			}
+			if err := cart.EnsureIndexes(seedCtx, db); err != nil {
+				slog.Error("cart indexes failed", "error", err)
+			}
+			if err := order.EnsureIndexes(seedCtx, db); err != nil {
+				slog.Error("order indexes failed", "error", err)
 			}
 			seedCancel()
 			slog.Info("mongodb reachable", "db", cfg.MongoDBName)
@@ -182,10 +186,11 @@ func main() {
 		r.Route("/v1", func(r chi.Router) {
 			catalog.RegisterPublicRoutes(r, db)
 			auth.RegisterRoutes(r, db, authOpts)
-			cart.RegisterRoutes(r, db, auth.RequireAuth(db))
 			r.Group(func(r chi.Router) {
 				r.Use(auth.RequireAuth(db))
 				auth.RegisterMeRoute(r, db)
+				cart.RegisterRoutes(r, db, auth.RequireAuth(db))
+				order.RegisterRoutes(r, db)
 			})
 			r.Route("/admin", func(r chi.Router) {
 				r.Use(auth.RequireAuth(db))

@@ -31,3 +31,24 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 	})
 	return err
 }
+
+// GetByUserID loads the cart document for checkout. Returns nil, nil if none exists.
+func GetByUserID(ctx context.Context, db *mongo.Database, userID primitive.ObjectID) (*Cart, error) {
+	var c Cart
+	err := db.Collection("carts").FindOne(ctx, bson.M{"userId": userID}).Decode(&c)
+	if err == mongo.ErrNoDocuments {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &c, nil
+}
+
+// Clear removes all line items (after a successful order).
+func Clear(ctx context.Context, db *mongo.Database, userID primitive.ObjectID) error {
+	_, err := db.Collection("carts").UpdateOne(ctx, bson.M{"userId": userID}, bson.M{
+		"$set": bson.M{"items": []CartItem{}, "updatedAt": time.Now().UTC()},
+	})
+	return err
+}

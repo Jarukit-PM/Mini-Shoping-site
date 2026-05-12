@@ -45,6 +45,11 @@ export async function SiteHeader() {
               Log in
             </Link>
           ) : null}
+          {me ? (
+            <Link className="text-slate-600 hover:text-[var(--accent)] dark:text-slate-300" href="/orders">
+              Orders
+            </Link>
+          ) : null}
           {me?.role === "admin" ? (
             <Link
               className="text-[var(--accent)] hover:underline"

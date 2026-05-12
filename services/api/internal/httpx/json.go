@@ -10,6 +10,7 @@ type ErrorBody struct {
 	Code    string            `json:"code"`
 	Message string            `json:"message"`
 	Fields  map[string]string `json:"fields,omitempty"`
+	Details []string          `json:"details,omitempty"`
 }
 
 // ErrorEnvelope is the top-level JSON shape for errors.
@@ -28,6 +29,15 @@ func WriteErrorFields(w http.ResponseWriter, status int, code, message string, f
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(ErrorEnvelope{
 		Error: ErrorBody{Code: code, Message: message, Fields: fields},
+	})
+}
+
+// WriteErrorDetails adds optional detail lines (e.g. out_of_stock offenders).
+func WriteErrorDetails(w http.ResponseWriter, status int, code, message string, details []string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(ErrorEnvelope{
+		Error: ErrorBody{Code: code, Message: message, Details: details},
 	})
 }
 
