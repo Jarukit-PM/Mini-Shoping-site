@@ -1,95 +1,155 @@
-import Link from "next/link";
-import { authedFetch } from "@/lib/api-server";
+"use client";
 
-type Product = {
-  id: string;
-  name: string;
-  sku: string;
-  priceCents: number;
-  currency: string;
-  stock: number;
-  category?: string;
-};
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Icon } from "@/components/Icon";
+import { Placeholder } from "@/components/Placeholder";
+import { ConfirmModal } from "@/components/ConfirmModal";
+import { useToast } from "@/components/Toast";
+import { listAllProducts, deleteProduct, type AdminProduct } from "@/lib/admin-products";
+import { formatPriceUSD } from "@/lib/api";
 
-function formatPrice(cents: number, currency: string): string {
-  const amount = cents / 100;
-  try {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: currency || "THB",
-      maximumFractionDigits: 0,
-    }).format(amount);
-  } catch {
-    return `${amount.toFixed(0)} ${currency}`;
+export default function AdminProductsPage() {
+  const router = useRouter();
+  const { push } = useToast();
+  const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [q, setQ] = useState("");
+  const [confirmDel, setConfirmDel] = useState<AdminProduct | null>(null);
+
+  function load() {
+    listAllProducts().then(setProducts);
   }
-}
 
-export default async function AdminProductsPage() {
-  const res = await authedFetch("/v1/products");
-  if (!res.ok) {
-    return <p className="text-sm text-red-600">Could not load products.</p>;
+  useEffect(() => {
+    load();
+  }, []);
+
+  const filtered = products.filter(
+    (p) =>
+      !q ||
+      p.name.toLowerCase().includes(q.toLowerCase()) ||
+      p.sku.toLowerCase().includes(q.toLowerCase())
+  );
+
+  function handleDelete(p: AdminProduct) {
+    deleteProduct(p.id);
+    push(`Deleted · ${p.name} removed from catalog`, "ok");
+    load();
+    setConfirmDel(null);
   }
-  const data = (await res.json()) as { items: Product[] };
-  const items = data.items ?? [];
 
   return (
-    <div>
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="fade-in">
+      <div className="admin-head">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Products</h1>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            Active catalog (soft-deleted items are hidden from the storefront).
-          </p>
+          <div className="label" style={{ marginBottom: 6 }}>Catalog</div>
+          <h1 className="h-1" style={{ margin: 0 }}>Products</h1>
+          <div className="muted tiny" style={{ marginTop: 6 }}>{products.length} items in catalog</div>
         </div>
-        <Link
-          className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white shadow-sm hover:opacity-90"
-          href="/admin/products/new"
-        >
-          Add product
-        </Link>
+        <button className="btn accent" onClick={() => router.push("/admin/products/new")}>
+          <Icon name="plus" /> Add product
+        </button>
       </div>
 
-      {items.length === 0 ? (
-        <p className="mt-8 rounded-xl border border-dashed border-[var(--border)] bg-[var(--card)] px-4 py-8 text-center text-slate-600 dark:text-slate-400">
-          No products yet.
-        </p>
-      ) : (
-        <div className="mt-8 overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-sm">
-          <table className="min-w-full divide-y divide-[var(--border)] text-sm">
-            <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-900 dark:text-slate-400">
-              <tr>
-                <th className="px-4 py-3">SKU</th>
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Category</th>
-                <th className="px-4 py-3 text-right">Price</th>
-                <th className="px-4 py-3 text-right">Stock</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--border)]">
-              {items.map((p) => (
-                <tr key={p.id}>
-                  <td className="px-4 py-3 font-mono text-xs text-slate-500">{p.sku}</td>
-                  <td className="px-4 py-3 font-medium">{p.name}</td>
-                  <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{p.category ?? "—"}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">
-                    {formatPrice(p.priceCents, p.currency)}
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums">{p.stock}</td>
-                  <td className="px-4 py-3 text-right">
-                    <Link
-                      className="text-[var(--accent)] hover:underline"
-                      href={`/admin/products/${p.id}`}
-                    >
-                      Edit
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div className="catalog-toolbar" style={{ marginBottom: 20 }}>
+        <div className="search">
+          <Icon name="search" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search products or SKUs"
+          />
         </div>
-      )}
+      </div>
+
+      <div style={{ background: "var(--paper)", border: "1px solid var(--line)", borderRadius: "var(--r-2)", overflow: "hidden" }}>
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th style={{ width: "40%" }}>Product</th>
+              <th>SKU</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Stock</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((p) => (
+              <tr key={p.id} className="row-link">
+                <td
+                  onClick={() => router.push(`/admin/products/${p.id}`)}
+                  style={{ cursor: "pointer" }}
+                >
+                  <div className="prod-cell">
+                    <Placeholder label="" tone={p.tone} />
+                    <div>
+                      <div className="name">{p.name}</div>
+                      <div className="muted tiny" style={{ marginTop: 2 }}>
+                        {(p.description ?? "").slice(0, 60)}
+                        {(p.description ?? "").length > 60 ? "…" : ""}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td className="mono">{p.sku}</td>
+                <td>{p.category}</td>
+                <td style={{ fontVariantNumeric: "tabular-nums" }}>{formatPriceUSD(p.priceCents)}</td>
+                <td>
+                  {p.stock === 0 ? (
+                    <span className="badge bad dot">0</span>
+                  ) : p.stock < 5 ? (
+                    <span className="badge warn dot">{p.stock}</span>
+                  ) : (
+                    <span style={{ fontVariantNumeric: "tabular-nums" }}>{p.stock}</span>
+                  )}
+                </td>
+                <td style={{ textAlign: "right" }}>
+                  <button
+                    className="btn sm ghost"
+                    onClick={() => router.push(`/admin/products/${p.id}`)}
+                  >
+                    <Icon name="edit" /> Edit
+                  </button>
+                  <button
+                    className="btn sm ghost"
+                    style={{ marginLeft: 6 }}
+                    onClick={() => setConfirmDel(p)}
+                  >
+                    <Icon name="trash" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={6}>
+                  <div className="empty">
+                    <div className="muted">No products found.</div>
+                  </div>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <ConfirmModal
+        open={!!confirmDel}
+        title="Delete product?"
+        body={
+          confirmDel ? (
+            <>
+              This will remove <strong>{confirmDel.name}</strong> from the catalog. Existing orders
+              that include it will be unaffected. This action cannot be undone.
+            </>
+          ) : null
+        }
+        confirmLabel="Delete product"
+        danger
+        onCancel={() => setConfirmDel(null)}
+        onConfirm={() => confirmDel && handleDelete(confirmDel)}
+      />
     </div>
   );
 }

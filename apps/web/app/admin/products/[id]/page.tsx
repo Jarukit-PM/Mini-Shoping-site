@@ -1,42 +1,28 @@
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import { authedFetch } from "@/lib/api-server";
-import { EditProductForm } from "./ui";
+"use client";
 
-type Product = {
-  id: string;
-  name: string;
-  description?: string;
-  sku: string;
-  priceCents: number;
-  currency: string;
-  stock: number;
-  category?: string;
-  imageUrl?: string;
-};
+import React, { use, useEffect, useState } from "react";
+import { AdminProductForm } from "@/components/AdminProductForm";
+import { listAllProducts, type AdminProduct } from "@/lib/admin-products";
 
-export default async function AdminEditProductPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const res = await authedFetch(`/v1/admin/products/${id}`);
-  if (res.status === 404) notFound();
-  if (!res.ok) {
-    return <p className="text-sm text-red-600">Could not load product.</p>;
-  }
-  const product = (await res.json()) as Product;
+export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const [product, setProduct] = useState<AdminProduct | null | "loading">("loading");
 
-  return (
-    <div className="mx-auto max-w-xl">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight">Edit product</h1>
-        <Link className="text-sm text-[var(--accent)] hover:underline" href="/admin/products">
-          Back
-        </Link>
+  useEffect(() => {
+    listAllProducts().then((all) => {
+      const found = all.find((p) => p.id === id);
+      setProduct(found ?? null);
+    });
+  }, [id]);
+
+  if (product === "loading") return null;
+  if (!product) {
+    return (
+      <div className="empty">
+        <div className="h-3">Product not found</div>
       </div>
-      <EditProductForm product={product} />
-    </div>
-  );
+    );
+  }
+
+  return <AdminProductForm existing={product} />;
 }

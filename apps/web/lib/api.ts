@@ -49,3 +49,11 @@ export function formatPrice(cents: number, currency: string): string {
     return `${(amount).toFixed(2)} ${currency}`
   }
 }
+
+/**
+ * Format cents as USD — always "$X.XX".
+ * Used throughout the MERIDIAN design-system UI components.
+ */
+export function formatPriceUSD(cents: number): string {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
+}

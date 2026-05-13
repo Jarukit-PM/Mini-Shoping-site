@@ -1,22 +1,39 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { HideOnAdmin } from "@/components/HideOnAdmin";
-import { SiteHeader } from "@/components/SiteHeader";
+import { Newsreader, Geist, JetBrains_Mono } from "next/font/google";
+import { ToastProvider } from "@/components/Toast";
+import { CartProvider } from "@/components/CartProvider";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+/* ------------------------------------------------------------------ */
+/*  Font loading                                                        */
+/*  Each font gets a CSS variable injected on <html> by Next/font.     */
+/*  globals.css then references them via --sans / --serif / --mono.    */
+/* ------------------------------------------------------------------ */
+
+const newsreader = Newsreader({
+  variable: "--font-newsreader",
   subsets: ["latin"],
+  weight: ["300", "400", "500"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const geist = Geist({
+  variable: "--font-geist",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  display: "swap",
+});
+
+const jetbrains = JetBrains_Mono({
+  variable: "--font-jetbrains",
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Mini Shopping Site",
-  description: "OOAD mini e-commerce — catalog, cart, and checkout (roadmap)",
+  title: "MERIDIAN",
+  description: "MERIDIAN mini shopping site — OOAD project",
 };
 
 export default async function RootLayout({
@@ -25,12 +42,14 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body className="min-h-screen antialiased">
-        <HideOnAdmin>
-          <SiteHeader />
-        </HideOnAdmin>
-        {children}
+    <html
+      lang="en"
+      className={`${newsreader.variable} ${geist.variable} ${jetbrains.variable}`}
+    >
+      <body>
+        <ToastProvider>
+          <CartProvider>{children}</CartProvider>
+        </ToastProvider>
       </body>
     </html>
   );

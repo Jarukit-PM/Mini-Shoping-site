@@ -1,74 +1,136 @@
-import { authedFetch } from "@/lib/api-server";
-import { OrderStatusRow } from "./OrderStatusRow";
+"use client";
 
-type OrderRow = {
-  id: string;
-  userId: string;
-  status: string;
-  createdAt: string;
-  grandTotalCents: number;
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { getOrders, updateOrderStatus, type Order, type OrderStatus } from "@/lib/orders";
+import { formatPriceUSD } from "@/lib/api";
+import { fmtDate } from "@/lib/format";
+import { Status } from "@/components/Status";
+import { useToast } from "@/components/Toast";
+
+// Admin-specific STATUS_FLOW with array semantics (includes Cancel option)
+const ADMIN_STATUS_FLOW: Record<OrderStatus, OrderStatus[]> = {
+  Pending: ["Paid", "Cancelled"],
+  Paid: ["Shipped", "Cancelled"],
+  Shipped: ["Delivered"],
+  Delivered: [],
+  Cancelled: [],
 };
 
-function formatMoney(cents: number): string {
-  const amount = cents / 100;
-  try {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "THB",
-      maximumFractionDigits: 0,
-    }).format(amount);
-  } catch {
-    return `${amount.toFixed(0)} THB`;
-  }
-}
+const STATUS_FILTERS: (OrderStatus | "All")[] = [
+  "All", "Pending", "Paid", "Shipped", "Delivered", "Cancelled",
+];
 
-export default async function AdminOrdersPage() {
-  const res = await authedFetch("/v1/admin/orders");
-  if (!res.ok) {
-    return <p className="text-sm text-red-600">Could not load orders.</p>;
+export default function AdminOrdersPage() {
+  const router = useRouter();
+  const { push } = useToast();
+  const [filter, setFilter] = useState<OrderStatus | "All">("All");
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  useEffect(() => {
+    setOrders(getOrders());
+  }, []);
+
+  const filtered = filter === "All" ? orders : orders.filter((o) => o.status === filter);
+
+  function handleAdvance(id: string, status: OrderStatus) {
+    updateOrderStatus(id, status);
+    push(`Order ${id} → ${status}`, "ok");
+    setOrders(getOrders());
   }
-  const data = (await res.json()) as { items: OrderRow[] };
-  const items = data.items ?? [];
 
   return (
-    <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Orders</h1>
-      <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-        Update fulfillment status (UC-11). Invalid transitions are rejected by the API.
-      </p>
-
-      {items.length === 0 ? (
-        <p className="mt-8 rounded-xl border border-dashed border-[var(--border)] bg-[var(--card)] px-4 py-8 text-center text-slate-600 dark:text-slate-400">
-          No orders yet — they will appear here after checkout is implemented.
-        </p>
-      ) : (
-        <div className="mt-8 overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-sm">
-          <table className="min-w-full divide-y divide-[var(--border)] text-sm">
-            <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-900 dark:text-slate-400">
-              <tr>
-                <th className="px-4 py-3">Order</th>
-                <th className="px-4 py-3">Customer</th>
-                <th className="px-4 py-3">Created</th>
-                <th className="px-4 py-3 text-right">Total</th>
-                <th className="px-4 py-3">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--border)]">
-              {items.map((o) => (
-                <tr key={o.id}>
-                  <td className="px-4 py-3 font-mono text-xs">{o.id}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-slate-500">{o.userId}</td>
-                  <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{o.createdAt}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{formatMoney(o.grandTotalCents)}</td>
-                  <td className="px-4 py-3">
-                    <OrderStatusRow orderId={o.id} status={o.status} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <div className="fade-in">
+      <div className="admin-head">
+        <div>
+          <div className="label" style={{ marginBottom: 6 }}>Fulfillment</div>
+          <h1 className="h-1" style={{ margin: 0 }}>Orders</h1>
+          <div className="muted tiny" style={{ marginTop: 6 }}>{orders.length} total orders</div>
         </div>
-      )}
+      </div>
+
+      <div className="chips" style={{ marginBottom: 20 }}>
+        {STATUS_FILTERS.map((s) => (
+          <button
+            key={s}
+            className={`chip ${filter === s ? "active" : ""}`}
+            onClick={() => setFilter(s)}
+          >
+            {s}
+            {s !== "All" && ` (${orders.filter((o) => o.status === s).length})`}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ background: "var(--paper)", border: "1px solid var(--line)", borderRadius: "var(--r-2)", overflow: "hidden" }}>
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>Order</th>
+              <th>Customer</th>
+              <th>Date</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((o) => (
+              <tr key={o.id} className="row-link">
+                <td
+                  className="mono"
+                  onClick={() => router.push(`/admin/orders/${o.id}`)}
+                  style={{ cursor: "pointer" }}
+                >
+                  {o.id}
+                </td>
+                <td
+                  onClick={() => router.push(`/admin/orders/${o.id}`)}
+                  style={{ cursor: "pointer" }}
+                >
+                  {o.shippingAddress.name}
+                  <div className="muted tiny">{o.shippingAddress.city}</div>
+                </td>
+                <td>{fmtDate(o.createdAt)}</td>
+                <td>{o.lineItems.reduce((s, li) => s + li.qty, 0)}</td>
+                <td style={{ fontVariantNumeric: "tabular-nums" }}>
+                  {formatPriceUSD(o.grandTotalCents)}
+                </td>
+                <td><Status value={o.status} /></td>
+                <td style={{ textAlign: "right" }}>
+                  {ADMIN_STATUS_FLOW[o.status].length > 0 ? (
+                    <select
+                      className="select"
+                      style={{ padding: "6px 10px", fontSize: 12, width: "auto", display: "inline-block" }}
+                      value=""
+                      onChange={(e) => {
+                        if (e.target.value) handleAdvance(o.id, e.target.value as OrderStatus);
+                      }}
+                    >
+                      <option value="">Advance →</option>
+                      {ADMIN_STATUS_FLOW[o.status].map((s) => (
+                        <option key={s} value={s}>
+                          {s === "Cancelled" ? "Cancel order" : `Mark ${s}`}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="muted tiny">—</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={7}>
+                  <div className="empty">No {filter.toLowerCase()} orders.</div>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
