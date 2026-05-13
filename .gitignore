@@ -10,4 +10,3 @@ apps/web/out/
 .DS_Store
 services/api/server
 services/api/bin/
-.claude/settings.local.json
