@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { Placeholder } from "@/components/Placeholder";
 import { useCart } from "@/components/CartProvider";
-import { addOrder } from "@/lib/orders";
-import { newOrderId } from "@/lib/format";
-import { formatPriceUSD } from "@/lib/api";
+import { apiBaseUrl, formatPriceUSD } from "@/lib/api";
 import { productTone } from "@/lib/tone";
 
 interface Address {
@@ -94,48 +92,57 @@ export default function CheckoutPage() {
     return Object.keys(e).length === 0;
   };
 
-  const handlePlace = () => {
+  const handlePlace = async () => {
     setPaymentError(null);
     setProcessing(true);
-    setTimeout(async () => {
-      const cardDigits = payment.cardNumber.replace(/\s/g, "");
+    const cardDigits = payment.cardNumber.replace(/\s/g, "");
+    try {
+      const res = await fetch(`${apiBaseUrl()}/v1/orders`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          shippingAddress: {
+            name: address.name,
+            line1: address.line1,
+            city: address.city,
+            postal: address.postal,
+            country: address.country,
+          },
+          payment: { cardNumber: cardDigits, expiry: payment.expiry, cvv: payment.cvv },
+        }),
+      });
 
-      // Payment declined simulation (4000-prefix card)
-      if (cardDigits.startsWith("4000")) {
-        setProcessing(false);
+      if (res.status === 402) {
         setPaymentError(
           "การชําระเงินถูกปฏิเสธ · Your card was declined. Try card 4242 4242 4242 4242 to simulate a successful charge."
         );
         setStep(1);
+        setProcessing(false);
         return;
       }
 
-      // Success path
-      const orderId = newOrderId();
-      const newOrder = {
-        id: orderId,
-        userId: "u-customer",
-        lineItems: items.map((li) => ({
-          productId: li.productId,
-          name: li.name,
-          qty: li.qty,
-          priceCents: li.unitPriceCents,
-        })),
-        subtotalCents: subtotal,
-        shippingCents: shipping,
-        grandTotalCents: total,
-        shippingAddress: address,
-        status: "Pending" as const,
-        paymentRef: "pay_" + Math.random().toString(36).slice(2, 10),
-        createdAt: new Date().toISOString(),
-        payment: { last4: cardDigits.slice(-4) },
-      };
+      if (res.status === 409) {
+        setPaymentError("Some items are out of stock. Please review your cart.");
+        setProcessing(false);
+        router.push("/cart");
+        return;
+      }
 
-      addOrder(newOrder);
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { error?: { message?: string } };
+        setPaymentError(err?.error?.message ?? "Something went wrong. Please try again.");
+        setProcessing(false);
+        return;
+      }
+
+      const { orderId } = (await res.json()) as { orderId: string };
       await clearCart();
-      setProcessing(false);
       router.push(`/checkout/success/${orderId}`);
-    }, 900);
+    } catch {
+      setPaymentError("Network error. Please try again.");
+      setProcessing(false);
+    }
   };
 
   return (

@@ -22,7 +22,7 @@ export default function OrderDetailPage({
   const [order, setOrder] = useState<Order | null | undefined>(undefined);
 
   useEffect(() => {
-    setOrder(getOrder(id) ?? null);
+    getOrder(id).then((o) => setOrder(o ?? null));
   }, [id]);
 
   if (order === undefined) {
@@ -123,7 +123,7 @@ export default function OrderDetailPage({
               </div>
             </div>
             <div className="sl-price">
-              {formatPriceUSD(li.priceCents * li.qty)}
+              {formatPriceUSD(li.lineTotalCents)}
             </div>
           </div>
         ))}
@@ -172,9 +172,6 @@ export default function OrderDetailPage({
             Payment reference
           </div>
           <div className="mono">{order.paymentRef}</div>
-          {order.payment?.last4 && (
-            <div className="muted">Card ending {order.payment.last4}</div>
-          )}
         </div>
       </div>
     </div>

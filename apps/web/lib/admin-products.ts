@@ -1,91 +1,64 @@
-// NOTE: This module accesses localStorage; call only from client-side code.
+// lib/admin-products.ts — Admin product API helpers (real API, no localStorage).
 
-import { fetchProducts, type Product } from "./api";
+import { apiBaseUrl, type Product } from "./api";
 import { productTone } from "./tone";
-
-/* ------------------------------------------------------------------ */
-/*  Types                                                               */
-/* ------------------------------------------------------------------ */
 
 export type AdminProduct = Product & {
   tone: 1 | 2 | 3 | 4 | 5;
-  _deleted?: boolean;
-  _override?: boolean;
 };
 
-/* ------------------------------------------------------------------ */
-/*  localStorage override layer                                         */
-/* ------------------------------------------------------------------ */
-
-const LS_KEY = "meridian_product_overrides";
-
-function readOverrides(): Record<string, AdminProduct> {
-  if (typeof window === "undefined") return {};
-  try {
-    return JSON.parse(localStorage.getItem(LS_KEY) ?? "{}");
-  } catch {
-    return {};
-  }
-}
-
-function writeOverrides(overrides: Record<string, AdminProduct>): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(LS_KEY, JSON.stringify(overrides));
-}
-
-/* ------------------------------------------------------------------ */
-/*  Public API                                                          */
-/* ------------------------------------------------------------------ */
-
-/** Return merged product list: API results + localStorage overrides. */
 export async function listAllProducts(): Promise<AdminProduct[]> {
-  const overrides = readOverrides();
-
-  // Try to fetch from API; fall back to overrides only on failure
-  let apiItems: Product[] = [];
   try {
-    const resp = await fetchProducts({ pageSize: 200 });
-    apiItems = resp.items;
-  } catch {
-    // API unreachable — serve from overrides
-  }
-
-  const merged: Map<string, AdminProduct> = new Map();
-
-  // Base from API
-  for (const p of apiItems) {
-    merged.set(p.id, {
+    const res = await fetch(`${apiBaseUrl()}/v1/products?pageSize=200`, {
+      credentials: "include",
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { items: Product[] };
+    return (data.items ?? []).map((p) => ({
       ...p,
       tone: productTone(p.id),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function saveProduct(p: AdminProduct): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/v1/admin/products/${p.id}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: p.name,
+        description: p.description,
+        category: p.category,
+        imageUrl: p.imageUrl,
+        sku: p.sku,
+        priceCents: p.priceCents,
+        currency: p.currency,
+        stock: p.stock,
+      }),
     });
-  }
-
-  // Apply overrides (including admin-created products not in API)
-  for (const [id, override] of Object.entries(overrides)) {
-    if (override._deleted) {
-      merged.delete(id);
-    } else {
-      merged.set(id, override);
+    if (!res.ok) {
+      const err = (await res.json().catch(() => ({}))) as { error?: { message?: string } };
+      return { ok: false, error: err?.error?.message ?? "Update failed" };
     }
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "Network error" };
   }
-
-  return Array.from(merged.values());
 }
 
-/** Save (create or update) a product in the override layer. */
-export function saveProduct(p: AdminProduct): void {
-  const overrides = readOverrides();
-  overrides[p.id] = {
-    ...p,
-    tone: p.tone ?? productTone(p.id),
-    _override: true,
-  };
-  writeOverrides(overrides);
-}
-
-/** Soft-delete a product from the override layer. */
-export function deleteProduct(id: string): void {
-  const overrides = readOverrides();
-  overrides[id] = { ...overrides[id], id, _deleted: true } as AdminProduct;
-  writeOverrides(overrides);
+export async function deleteProduct(id: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/v1/admin/products/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }

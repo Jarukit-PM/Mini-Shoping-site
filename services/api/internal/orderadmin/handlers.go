@@ -15,6 +15,8 @@ import (
 )
 
 type totalsDoc struct {
+	SubtotalCents   int64 `bson:"subtotalCents"`
+	ShippingCents   int64 `bson:"shippingCents"`
 	GrandTotalCents int64 `bson:"grandTotalCents"`
 }
 
@@ -42,9 +44,37 @@ type patchStatusRequest struct {
 	Status string `json:"status"`
 }
 
+type fullLineItem struct {
+	ProductID          primitive.ObjectID `bson:"productId"`
+	Name               string             `bson:"name"`
+	Qty                int32              `bson:"qty"`
+	PriceCentsSnapshot int64              `bson:"priceCentsSnapshot"`
+	LineTotalCents     int64              `bson:"lineTotalCents"`
+}
+
+type fullShippingAddress struct {
+	Name    string `bson:"name"`
+	Line1   string `bson:"line1"`
+	City    string `bson:"city"`
+	Postal  string `bson:"postal"`
+	Country string `bson:"country"`
+}
+
+type fullOrderDoc struct {
+	ID              primitive.ObjectID  `bson:"_id"`
+	UserID          primitive.ObjectID  `bson:"userId"`
+	Status          string              `bson:"status"`
+	Totals          totalsDoc           `bson:"totals"`
+	CreatedAt       time.Time           `bson:"createdAt"`
+	ShippingAddress fullShippingAddress `bson:"shippingAddress"`
+	LineItems       []fullLineItem      `bson:"lineItems"`
+	PaymentRef      string              `bson:"paymentRef"`
+}
+
 // RegisterRoutes mounts `/orders` under `/v1/admin`.
 func RegisterRoutes(r chi.Router, db *mongo.Database) {
 	r.Get("/orders", listOrders(db))
+	r.Get("/orders/{id}", getOrderAdmin(db))
 	r.Patch("/orders/{id}/status", patchOrderStatus(db))
 }
 
@@ -129,6 +159,59 @@ func orderResponse(d orderDoc) map[string]any {
 		"status":    d.Status,
 		"createdAt": d.CreatedAt.UTC().Format(time.RFC3339),
 		"totals":    d.Totals,
+	}
+}
+
+func getOrderAdmin(db *mongo.Database) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		idHex := chi.URLParam(req, "id")
+		oid, err := primitive.ObjectIDFromHex(idHex)
+		if err != nil {
+			httpx.WriteError(w, http.StatusBadRequest, "invalid_id", "invalid order id")
+			return
+		}
+		ctx, cancel := context.WithTimeout(req.Context(), 10*time.Second)
+		defer cancel()
+		var o fullOrderDoc
+		err = db.Collection("orders").FindOne(ctx, bson.M{"_id": oid}).Decode(&o)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				httpx.WriteError(w, http.StatusNotFound, "not_found", "order not found")
+				return
+			}
+			httpx.WriteError(w, http.StatusInternalServerError, "database_error", "could not load order")
+			return
+		}
+		lineItems := make([]map[string]any, 0, len(o.LineItems))
+		for _, li := range o.LineItems {
+			lineItems = append(lineItems, map[string]any{
+				"productId":          li.ProductID.Hex(),
+				"name":               li.Name,
+				"qty":                li.Qty,
+				"priceCentsSnapshot": li.PriceCentsSnapshot,
+				"lineTotalCents":     li.LineTotalCents,
+			})
+		}
+		httpx.WriteJSON(w, http.StatusOK, map[string]any{
+			"id":     o.ID.Hex(),
+			"userId": o.UserID.Hex(),
+			"status": o.Status,
+			"createdAt": o.CreatedAt.UTC().Format(time.RFC3339),
+			"totals": map[string]any{
+				"subtotalCents":   o.Totals.SubtotalCents,
+				"shippingCents":   o.Totals.ShippingCents,
+				"grandTotalCents": o.Totals.GrandTotalCents,
+			},
+			"shippingAddress": map[string]any{
+				"name":    o.ShippingAddress.Name,
+				"line1":   o.ShippingAddress.Line1,
+				"city":    o.ShippingAddress.City,
+				"postal":  o.ShippingAddress.Postal,
+				"country": o.ShippingAddress.Country,
+			},
+			"lineItems":  lineItems,
+			"paymentRef": o.PaymentRef,
+		})
 	}
 }
 

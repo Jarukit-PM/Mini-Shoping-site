@@ -80,9 +80,9 @@ export function AdminProductForm({ existing }: AdminProductFormProps) {
     return Object.keys(e).length === 0;
   }
 
-  function submit() {
+  async function submit() {
     if (!validate()) return;
-    const id = existing ? existing.id : "p" + Math.random().toString(36).slice(2, 6);
+    const id = existing ? existing.id : "";
     const sku = form.sku.trim().toUpperCase();
     const product: AdminProduct = {
       id,
@@ -95,22 +95,24 @@ export function AdminProductForm({ existing }: AdminProductFormProps) {
       description: form.description.trim(),
       imageUrl: form.imageUrl.trim(),
       tone: form.tone ?? productTone(sku),
-      _override: true,
     };
-    saveProduct(product);
-    if (isNew) {
-      push(`Added · ${product.name} is now live on the storefront`, "ok");
-      router.push("/admin/products");
-    } else {
-      push(`Saved · ${product.name} updated`, "ok");
-      setSavedFlash(true);
-      setTimeout(() => setSavedFlash(false), 1800);
+    const result = await saveProduct(product);
+    if (!result.ok) {
+      push(result.error ?? "Save failed", "bad");
+      return;
     }
+    push(`Saved · ${product.name} updated`, "ok");
+    setSavedFlash(true);
+    setTimeout(() => setSavedFlash(false), 1800);
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!existing) return;
-    deleteProduct(existing.id);
+    const ok = await deleteProduct(existing.id);
+    if (!ok) {
+      push("Could not delete product", "bad");
+      return;
+    }
     push(`Deleted · ${existing.name} removed from catalog`, "ok");
     router.push("/admin/products");
   }

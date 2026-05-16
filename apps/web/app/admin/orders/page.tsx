@@ -2,17 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getOrders, updateOrderStatus, type Order, type OrderStatus } from "@/lib/orders";
+import {
+  getAdminOrders,
+  advanceOrderStatus,
+  type AdminOrderSummary,
+} from "@/lib/admin-orders";
 import { formatPriceUSD } from "@/lib/api";
 import { fmtDate } from "@/lib/format";
 import { Status } from "@/components/Status";
 import { useToast } from "@/components/Toast";
+import type { OrderStatus } from "@/lib/orders";
 
-// Admin-specific STATUS_FLOW with array semantics (includes Cancel option)
 const ADMIN_STATUS_FLOW: Record<OrderStatus, OrderStatus[]> = {
   Pending: ["Paid", "Cancelled"],
   Paid: ["Shipped", "Cancelled"],
-  Shipped: ["Delivered"],
+  Shipped: [],
   Delivered: [],
   Cancelled: [],
 };
@@ -25,18 +29,26 @@ export default function AdminOrdersPage() {
   const router = useRouter();
   const { push } = useToast();
   const [filter, setFilter] = useState<OrderStatus | "All">("All");
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<AdminOrderSummary[]>([]);
+
+  function load() {
+    getAdminOrders().then(setOrders);
+  }
 
   useEffect(() => {
-    setOrders(getOrders());
+    load();
   }, []);
 
   const filtered = filter === "All" ? orders : orders.filter((o) => o.status === filter);
 
-  function handleAdvance(id: string, status: OrderStatus) {
-    updateOrderStatus(id, status);
-    push(`Order ${id} → ${status}`, "ok");
-    setOrders(getOrders());
+  async function handleAdvance(id: string, status: OrderStatus) {
+    const ok = await advanceOrderStatus(id, status);
+    if (ok) {
+      push(`Order ${id.slice(0, 8)}… → ${status}`, "ok");
+      load();
+    } else {
+      push("Could not update status", "bad");
+    }
   }
 
   return (
@@ -67,9 +79,7 @@ export default function AdminOrdersPage() {
           <thead>
             <tr>
               <th>Order</th>
-              <th>Customer</th>
               <th>Date</th>
-              <th>Items</th>
               <th>Total</th>
               <th>Status</th>
               <th></th>
@@ -85,21 +95,13 @@ export default function AdminOrdersPage() {
                 >
                   {o.id}
                 </td>
-                <td
-                  onClick={() => router.push(`/admin/orders/${o.id}`)}
-                  style={{ cursor: "pointer" }}
-                >
-                  {o.shippingAddress.name}
-                  <div className="muted tiny">{o.shippingAddress.city}</div>
-                </td>
                 <td>{fmtDate(o.createdAt)}</td>
-                <td>{o.lineItems.reduce((s, li) => s + li.qty, 0)}</td>
                 <td style={{ fontVariantNumeric: "tabular-nums" }}>
                   {formatPriceUSD(o.grandTotalCents)}
                 </td>
                 <td><Status value={o.status} /></td>
                 <td style={{ textAlign: "right" }}>
-                  {ADMIN_STATUS_FLOW[o.status].length > 0 ? (
+                  {ADMIN_STATUS_FLOW[o.status]?.length > 0 ? (
                     <select
                       className="select"
                       style={{ padding: "6px 10px", fontSize: 12, width: "auto", display: "inline-block" }}
@@ -123,8 +125,8 @@ export default function AdminOrdersPage() {
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={7}>
-                  <div className="empty">No {filter.toLowerCase()} orders.</div>
+                <td colSpan={5}>
+                  <div className="empty">No {filter === "All" ? "" : filter.toLowerCase()} orders.</div>
                 </td>
               </tr>
             )}

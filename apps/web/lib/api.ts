@@ -29,13 +29,13 @@ export async function fetchProducts(p: ProductListParams = {}): Promise<Products
   if (p.category) url.searchParams.set("category", p.category)
   if (p.page) url.searchParams.set("page", String(p.page))
   if (p.pageSize) url.searchParams.set("pageSize", String(p.pageSize))
-  const res = await fetch(url.toString(), { cache: "no-store" })
+  const res = await fetch(url.toString(), { next: { revalidate: 60 } })
   if (!res.ok) throw new Error(`fetchProducts ${res.status}`)
   return res.json()
 }
 
 export async function fetchProduct(id: string): Promise<Product> {
-  const res = await fetch(`${apiBaseUrl()}/v1/products/${id}`, { cache: "no-store" })
+  const res = await fetch(`${apiBaseUrl()}/v1/products/${id}`, { next: { revalidate: 60 } })
   if (res.status === 404) throw new Error("not_found")
   if (!res.ok) throw new Error(`fetchProduct ${res.status}`)
   return res.json()

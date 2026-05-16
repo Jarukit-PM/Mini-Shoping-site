@@ -25,16 +25,19 @@ func EnsureDemoProducts(ctx context.Context, db *mongo.Database) error {
 		res, err := coll.UpdateOne(
 			ctx,
 			bson.D{{Key: "sku", Value: p.SKU}},
-			bson.D{{Key: "$set", Value: bson.D{
-				{Key: "name", Value: p.Name},
-				{Key: "description", Value: p.Description},
-				{Key: "category", Value: p.Category},
-				{Key: "imageUrl", Value: p.ImageURL},
-				{Key: "priceCents", Value: p.PriceCents},
-				{Key: "currency", Value: p.Currency},
-				{Key: "sku", Value: p.SKU},
-				{Key: "stock", Value: p.Stock},
-			}}},
+			bson.D{
+				{Key: "$set", Value: bson.D{
+					{Key: "name", Value: p.Name},
+					{Key: "description", Value: p.Description},
+					{Key: "category", Value: p.Category},
+					{Key: "imageUrl", Value: p.ImageURL},
+					{Key: "priceCents", Value: p.PriceCents},
+					{Key: "currency", Value: p.Currency},
+					{Key: "sku", Value: p.SKU},
+					{Key: "stock", Value: p.Stock},
+				}},
+				{Key: "$unset", Value: bson.D{{Key: "deletedAt", Value: ""}}},
+			},
 			options.Update().SetUpsert(true),
 		)
 		if err != nil {

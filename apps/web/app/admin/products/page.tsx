@@ -6,8 +6,8 @@ import { Icon } from "@/components/Icon";
 import { Placeholder } from "@/components/Placeholder";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { useToast } from "@/components/Toast";
-import { listAllProducts, deleteProduct, type AdminProduct } from "@/lib/admin-products";
-import { formatPriceUSD } from "@/lib/api";
+import { listAllProducts, type AdminProduct } from "@/lib/admin-products";
+import { formatPriceUSD, apiBaseUrl } from "@/lib/api";
 
 export default function AdminProductsPage() {
   const router = useRouter();
@@ -31,11 +31,23 @@ export default function AdminProductsPage() {
       p.sku.toLowerCase().includes(q.toLowerCase())
   );
 
-  function handleDelete(p: AdminProduct) {
-    deleteProduct(p.id);
-    push(`Deleted · ${p.name} removed from catalog`, "ok");
-    load();
+  async function handleDelete(p: AdminProduct) {
     setConfirmDel(null);
+    try {
+      const res = await fetch(`${apiBaseUrl()}/v1/admin/products/${p.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (res.status === 204) {
+        push(`Deleted · ${p.name} removed from catalog`, "ok");
+        load();
+      } else {
+        const body = await res.json().catch(() => ({})) as { error?: { message?: string } };
+        push(body.error?.message ?? "Could not delete product", "bad");
+      }
+    } catch {
+      push("Could not reach the API", "bad");
+    }
   }
 
   return (
@@ -148,7 +160,7 @@ export default function AdminProductsPage() {
         confirmLabel="Delete product"
         danger
         onCancel={() => setConfirmDel(null)}
-        onConfirm={() => confirmDel && handleDelete(confirmDel)}
+        onConfirm={() => { if (confirmDel) void handleDelete(confirmDel); }}
       />
     </div>
   );

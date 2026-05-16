@@ -4,17 +4,16 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { Status } from "@/components/Status";
-import { getOrders } from "@/lib/orders";
-import type { Order } from "@/lib/orders";
+import { getOrders, type OrderSummary } from "@/lib/orders";
 import { fmtDate } from "@/lib/format";
 import { formatPriceUSD } from "@/lib/api";
 
 export default function OrdersPage() {
   const router = useRouter();
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<OrderSummary[]>([]);
 
   useEffect(() => {
-    setOrders(getOrders().filter((o) => !o.userId || o.userId === "u-customer"));
+    getOrders().then(setOrders);
   }, []);
 
   return (
@@ -50,7 +49,6 @@ export default function OrdersPage() {
               <tr>
                 <th>Order</th>
                 <th>Date</th>
-                <th>Items</th>
                 <th>Total</th>
                 <th>Status</th>
                 <th></th>
@@ -65,9 +63,6 @@ export default function OrdersPage() {
                 >
                   <td className="mono">{o.id}</td>
                   <td>{fmtDate(o.createdAt)}</td>
-                  <td>
-                    {o.lineItems.reduce((s, li) => s + li.qty, 0)} items
-                  </td>
                   <td>{formatPriceUSD(o.grandTotalCents)}</td>
                   <td>
                     <Status value={o.status} />

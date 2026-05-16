@@ -2,8 +2,9 @@
 
 import React, { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getOrder, updateOrderStatus, type Order, type OrderStatus } from "@/lib/orders";
+import { getAdminOrder, advanceOrderStatus } from "@/lib/admin-orders";
 import { listAllProducts, type AdminProduct } from "@/lib/admin-products";
+import { type Order, type OrderStatus } from "@/lib/orders";
 import { formatPriceUSD } from "@/lib/api";
 import { fmtDate } from "@/lib/format";
 import { Icon } from "@/components/Icon";
@@ -11,11 +12,10 @@ import { Placeholder } from "@/components/Placeholder";
 import { Status } from "@/components/Status";
 import { useToast } from "@/components/Toast";
 
-// Admin-specific STATUS_FLOW with array semantics
 const ADMIN_STATUS_FLOW: Record<OrderStatus, OrderStatus[]> = {
   Pending: ["Paid", "Cancelled"],
   Paid: ["Shipped", "Cancelled"],
-  Shipped: ["Delivered"],
+  Shipped: [],
   Delivered: [],
   Cancelled: [],
 };
@@ -29,16 +29,24 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
   const [order, setOrder] = useState<Order | null | "loading">("loading");
   const [products, setProducts] = useState<AdminProduct[]>([]);
 
+  function loadOrder() {
+    getAdminOrder(id).then((o) => setOrder(o));
+  }
+
   useEffect(() => {
-    setOrder(getOrder(id) ?? null);
+    loadOrder();
     listAllProducts().then(setProducts);
   }, [id]);
 
-  function handleAdvance(status: OrderStatus) {
+  async function handleAdvance(status: OrderStatus) {
     if (!order || order === "loading") return;
-    updateOrderStatus(order.id, status);
-    push(`Order ${order.id} → ${status}`, "ok");
-    setOrder(getOrder(order.id) ?? null);
+    const ok = await advanceOrderStatus(order.id, status);
+    if (ok) {
+      push(`Order ${order.id.slice(0, 8)}… → ${status}`, "ok");
+      loadOrder();
+    } else {
+      push("Could not update status", "bad");
+    }
   }
 
   if (order === "loading") return null;
@@ -50,7 +58,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
     );
   }
 
-  const nextStatuses = ADMIN_STATUS_FLOW[order.status];
+  const nextStatuses = ADMIN_STATUS_FLOW[order.status] ?? [];
   const currentIdx = STATUS_TIMELINE.indexOf(order.status);
 
   return (
@@ -107,7 +115,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
                       </span>
                     </div>
                   </div>
-                  <div className="sl-price">{formatPriceUSD(li.priceCents * li.qty)}</div>
+                  <div className="sl-price">{formatPriceUSD(li.lineTotalCents)}</div>
                 </div>
               );
             })}
@@ -157,7 +165,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
           <div className="label" style={{ marginBottom: 10 }}>Payment</div>
           <div style={{ marginBottom: 20 }}>
             <div className="mono">{order.paymentRef}</div>
-            <div className="muted tiny" style={{ marginTop: 4 }}>Stripe (stub) · captured</div>
+            <div className="muted tiny" style={{ marginTop: 4 }}>Stub processor · captured</div>
           </div>
 
           <div className="label" style={{ marginBottom: 10 }}>Customer notes</div>

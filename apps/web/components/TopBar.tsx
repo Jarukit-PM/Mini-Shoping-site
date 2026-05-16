@@ -18,7 +18,7 @@ export function TopBar() {
     fetch(`${apiBaseUrl()}/v1/auth/me`, { credentials: "include", cache: "no-store" })
       .then((r) => setLoggedIn(r.ok))
       .catch(() => setLoggedIn(false));
-  }, [pathname]);
+  }, []);
 
   async function logout() {
     try {

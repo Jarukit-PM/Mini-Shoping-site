@@ -282,7 +282,7 @@ a { color: inherit; text-decoration: none; }
 .product-gallery .thumbs .ph { aspect-ratio: 1/1; padding: 8px; cursor: pointer; border: 2px solid transparent; }
 .product-gallery .thumbs .ph.sel { border-color: var(--ink); }
 
-.product-info { display: flex; flex-direction: column; gap: 24px; }
+.product-info { display: flex; flex-direction: column; gap: 40px; min-width: 0; }
 .product-info .meta-row { display: flex; align-items: center; gap: 10px; }
 .product-info .desc { color: var(--ink-2); font-size: 14px; line-height: 1.65; }
 .qty {

@@ -3,18 +3,18 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { listAllProducts, type AdminProduct } from "@/lib/admin-products";
-import { getOrders, type Order } from "@/lib/orders";
+import { getAdminOrders, type AdminOrderSummary } from "@/lib/admin-orders";
 import { formatPriceUSD } from "@/lib/api";
 import { Placeholder } from "@/components/Placeholder";
 import { Status } from "@/components/Status";
 
 export default function AdminDashboard() {
   const [products, setProducts] = useState<AdminProduct[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<AdminOrderSummary[]>([]);
 
   useEffect(() => {
     listAllProducts().then(setProducts);
-    setOrders(getOrders());
+    getAdminOrders().then(setOrders);
   }, []);
 
   const revenue = orders.reduce((s, o) => s + o.grandTotalCents, 0);
@@ -76,7 +76,6 @@ export default function AdminDashboard() {
             <thead>
               <tr>
                 <th>Order</th>
-                <th>Customer</th>
                 <th>Total</th>
                 <th>Status</th>
               </tr>
@@ -90,14 +89,13 @@ export default function AdminDashboard() {
                   style={{ cursor: "pointer" }}
                 >
                   <td className="mono">{o.id}</td>
-                  <td>{o.shippingAddress.name}</td>
                   <td>{formatPriceUSD(o.grandTotalCents)}</td>
                   <td><Status value={o.status} /></td>
                 </tr>
               ))}
               {recent.length === 0 && (
                 <tr>
-                  <td colSpan={4}>
+                  <td colSpan={3}>
                     <div className="empty"><div className="muted">No orders yet.</div></div>
                   </td>
                 </tr>

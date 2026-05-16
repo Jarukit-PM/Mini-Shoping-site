@@ -20,7 +20,7 @@ export default function ConfirmationPage({
   const [order, setOrder] = useState<Order | null | undefined>(undefined);
 
   useEffect(() => {
-    setOrder(getOrder(orderId) ?? null);
+    getOrder(orderId).then((o) => setOrder(o ?? null));
   }, [orderId]);
 
   if (order === undefined) {
@@ -129,11 +129,7 @@ export default function ConfirmationPage({
           <div className="label" style={{ marginBottom: 10 }}>
             Payment
           </div>
-          <div>
-            {order.payment
-              ? `Card ending ${order.payment.last4}`
-              : "Card"}
-          </div>
+          <div>Card</div>
           <div className="muted mono tiny">{order.paymentRef}</div>
         </div>
       </div>
@@ -162,7 +158,7 @@ export default function ConfirmationPage({
               </div>
             </div>
             <div className="sl-price">
-              {formatPriceUSD(li.priceCents * li.qty)}
+              {formatPriceUSD(li.lineTotalCents)}
             </div>
           </div>
         ))}
