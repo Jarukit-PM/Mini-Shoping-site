@@ -5,6 +5,7 @@ describe("apiBaseUrl", () => {
   const orig = { api: process.env.API_URL, pub: process.env.NEXT_PUBLIC_API_URL }
 
   afterEach(() => {
+    vi.unstubAllGlobals()
     if (orig.api === undefined) delete process.env.API_URL
     else process.env.API_URL = orig.api
     if (orig.pub === undefined) delete process.env.NEXT_PUBLIC_API_URL
@@ -27,6 +28,13 @@ describe("apiBaseUrl", () => {
     delete process.env.API_URL
     delete process.env.NEXT_PUBLIC_API_URL
     expect(apiBaseUrl()).toBe("http://localhost:8080")
+  })
+
+  it("in the browser ignores API_URL and uses NEXT_PUBLIC_API_URL", () => {
+    vi.stubGlobal("window", {} as Window)
+    process.env.API_URL = "https://api.onrender.com"
+    process.env.NEXT_PUBLIC_API_URL = "https://public.onrender.com"
+    expect(apiBaseUrl()).toBe("https://public.onrender.com")
   })
 })
 

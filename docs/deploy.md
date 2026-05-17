@@ -33,12 +33,16 @@ Split stack (same pattern as [Apartment-System](https://github.com/Jarukit-PM/Ap
 
 1. **Add New Project** → import `Jarukit-PM/Mini-Shoping-site`.
 2. **Root Directory**: `apps/web`.
-3. Environment variables (Production):
+3. Environment variables (Production) — **both are required**:
 
-   | Variable | Value |
-   |----------|--------|
-   | `API_URL` | `https://mini-shop-api.onrender.com` |
-   | `NEXT_PUBLIC_API_URL` | same as `API_URL` |
+   | Variable | Used where | Value |
+   |----------|------------|--------|
+   | `API_URL` | Vercel **server** (SSR, catalog) | `https://mini-shop-api.onrender.com` |
+   | `NEXT_PUBLIC_API_URL` | User **browser** (login, cart, checkout) | same URL, with `https://` |
+
+   `API_URL` alone is not enough: login/register run in the browser and only read `NEXT_PUBLIC_API_URL`. Without it, requests go to `http://localhost:8080`.
+
+   After adding or changing `NEXT_PUBLIC_*`, **redeploy** (new production build).
 
 4. Deploy once; copy **Project ID** and **Team ID** from **Settings → General** for GitHub secrets.
 

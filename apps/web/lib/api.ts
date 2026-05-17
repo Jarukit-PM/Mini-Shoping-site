@@ -1,9 +1,18 @@
-/** Server-side Go API base URL; in Docker Compose use `http://api:8080`. */
+const defaultApiBase = "http://localhost:8080";
+
+/**
+ * Go API base URL.
+ * - Server (SSR): `API_URL` (e.g. internal Docker `http://api:8080`).
+ * - Browser: only `NEXT_PUBLIC_API_URL` is embedded at build time — `API_URL` is not sent to the client.
+ */
 export function apiBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    return process.env.NEXT_PUBLIC_API_URL ?? defaultApiBase;
+  }
   return (
     process.env.API_URL ??
     process.env.NEXT_PUBLIC_API_URL ??
-    "http://localhost:8080"
+    defaultApiBase
   );
 }
 
