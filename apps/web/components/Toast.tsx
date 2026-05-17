@@ -4,8 +4,8 @@ import React, {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useState,
+  useSyncExternalStore,
 } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon";
@@ -44,11 +44,11 @@ export function useToast(): ToastContextValue {
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   const push = useCallback((message: string, kind: ToastKind = "ok") => {
     const id = Math.random().toString(36).slice(2);

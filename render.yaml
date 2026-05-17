@@ -1,0 +1,29 @@
+# Render Blueprint — Go API only (MongoDB on Atlas, web on Vercel).
+# Apply once: Render Dashboard → New → Blueprint → connect this repo.
+# Set secrets in the Dashboard after apply (MONGODB_URI, CORS_ORIGINS, ADMIN_*).
+# GitHub Actions triggers deploys via RENDER_DEPLOY_HOOK_URL (autoDeploy is off).
+
+services:
+  - type: web
+    name: mini-shop-api
+    runtime: docker
+    plan: free
+    region: oregon
+    branch: main
+    autoDeploy: false
+    dockerfilePath: ./deploy/docker/Dockerfile.api
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: MONGODB_DATABASE
+        value: mini_shop
+      - key: MONGODB_URI
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false

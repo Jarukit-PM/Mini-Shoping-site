@@ -140,6 +140,14 @@ func meHandler(db *mongo.Database) http.HandlerFunc {
 	}
 }
 
+func cookieSameSite(secure bool) http.SameSite {
+	if secure {
+		// Vercel (web) + Render (API) are different sites; Lax blocks cross-site cookies.
+		return http.SameSiteNoneMode
+	}
+	return http.SameSiteLaxMode
+}
+
 func sessionCookie(token string, secure bool) *http.Cookie {
 	maxAge := int(sessionTTL().Seconds())
 	if maxAge < 60 {
@@ -151,7 +159,7 @@ func sessionCookie(token string, secure bool) *http.Cookie {
 		Path:     "/",
 		MaxAge:   maxAge,
 		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: cookieSameSite(secure),
 		Secure:   secure,
 	}
 }
@@ -163,7 +171,7 @@ func clearSessionCookie(secure bool) *http.Cookie {
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: cookieSameSite(secure),
 		Secure:   secure,
 	}
 }

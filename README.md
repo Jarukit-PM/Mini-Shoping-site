@@ -80,6 +80,15 @@ cd apps/web
 npm run dev
 ```
 
+## Production deployment
+
+**MongoDB Atlas** + **Render** (API) + **Vercel** (web) + **GitHub Actions** — same layout as [Apartment-System](https://github.com/Jarukit-PM/Apartment-System). Step-by-step: **[docs/deploy.md](./docs/deploy.md)**.
+
+Quick links:
+
+- Apply Render Blueprint: [dashboard.render.com/blueprint/new?repo=https://github.com/Jarukit-PM/Mini-Shoping-site](https://dashboard.render.com/blueprint/new?repo=https://github.com/Jarukit-PM/Mini-Shoping-site)
+- Import web on Vercel with **Root Directory** `apps/web`
+
 ## Repository layout
 
 ```
