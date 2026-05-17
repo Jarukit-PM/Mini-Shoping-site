@@ -86,11 +86,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Run from repo root: Vercel project Root Directory is already apps/web.
+      # Setting working-directory here would resolve to apps/web/apps/web.
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v42.3.0
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: apps/web
           vercel-args: "--prod"

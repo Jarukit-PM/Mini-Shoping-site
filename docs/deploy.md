@@ -46,6 +46,8 @@ Split stack (same pattern as [Apartment-System](https://github.com/Jarukit-PM/Ap
 
 4. Deploy once; copy **Project ID** and **Team ID** from **Settings → General** for GitHub secrets.
 
+   **GitHub Actions:** keep **Root Directory** as `apps/web` on Vercel, but deploy from the **repository root** in `.github/workflows/deploy.yml` (do not set `working-directory: apps/web` on `vercel-action` — that doubles the path to `apps/web/apps/web`).
+
 Auth uses an **httpOnly cookie** on the API host. The browser calls the API with `credentials: "include"`; `APP_ENV=production` on Render sets `Secure` and `SameSite=None` for cross-origin Vercel → Render.
 
 ## 4. GitHub Actions secrets
