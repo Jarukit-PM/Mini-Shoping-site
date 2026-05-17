@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Icon } from "./Icon";
+import { ConfirmModal } from "./ConfirmModal";
 import { useCart, useCartCount } from "./CartProvider";
 import { apiBaseUrl } from "@/lib/api";
 
@@ -13,20 +14,25 @@ export function TopBar() {
   const cartCount = useCartCount();
   const router = useRouter();
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     fetch(`${apiBaseUrl()}/v1/auth/me`, { credentials: "include", cache: "no-store" })
       .then((r) => setLoggedIn(r.ok))
       .catch(() => setLoggedIn(false));
-  }, []);
+  }, [pathname]);
 
   async function logout() {
+    setLoggingOut(true);
     try {
       await fetch(`${apiBaseUrl()}/v1/auth/logout`, { method: "POST", credentials: "include" });
     } catch {
-      /* still redirect */
+      /* still clear local auth state */
     }
-    router.push("/");
+    setLoggedIn(false);
+    setLogoutOpen(false);
+    setLoggingOut(false);
     router.refresh();
   }
 
@@ -52,7 +58,7 @@ export function TopBar() {
       {/* Right actions */}
       <div className="topbar-right">
         {loggedIn === true ? (
-          <button className="icon-btn" onClick={() => void logout()}>
+          <button className="icon-btn" type="button" onClick={() => setLogoutOpen(true)}>
             Log out
           </button>
         ) : loggedIn === false ? (
@@ -78,6 +84,20 @@ export function TopBar() {
           )}
         </button>
       </div>
+
+      <ConfirmModal
+        open={logoutOpen}
+        title="Log out?"
+        body="You will need to sign in again to view orders or check out."
+        confirmLabel={loggingOut ? "Logging out…" : "Log out"}
+        danger
+        onCancel={() => {
+          if (!loggingOut) setLogoutOpen(false);
+        }}
+        onConfirm={() => {
+          if (!loggingOut) void logout();
+        }}
+      />
     </header>
   );
 }

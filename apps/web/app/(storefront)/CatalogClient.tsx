@@ -92,7 +92,7 @@ export function CatalogClient({
           </div>
           <div className="mono muted" style={{ textAlign: "right" }}>
             <div>
-              {String(filtered.length).padStart(2, "0")} / {initialProducts.length} items
+              {filtered.length} / {initialProducts.length} items
             </div>
             <div>Free shipping ≥ $150</div>
           </div>
