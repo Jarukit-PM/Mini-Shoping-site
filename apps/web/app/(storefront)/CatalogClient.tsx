@@ -137,7 +137,7 @@ export function CatalogClient({
         {filtered.length === 0 ? (
           <div className="empty">
             <Icon name="search" className="xl" />
-            <div className="h-3">
+            <div className="heading-3">
               {q ? `Nothing matches "${q}"` : "No products in this category"}
             </div>
             <div className="muted">

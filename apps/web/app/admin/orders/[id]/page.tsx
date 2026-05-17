@@ -53,7 +53,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
   if (!order) {
     return (
       <div className="empty">
-        <div className="h-3">Order not found</div>
+        <div className="heading-3">Order not found</div>
       </div>
     );
   }
@@ -70,7 +70,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
       <div className="admin-head" style={{ marginTop: 16 }}>
         <div>
           <div className="label" style={{ marginBottom: 6 }}>Order</div>
-          <h1 className="h-1 mono" style={{ margin: 0, letterSpacing: 0 }}>{order.id}</h1>
+          <h1 className="heading-1 mono" style={{ margin: 0, letterSpacing: 0 }}>{order.id}</h1>
           <div className="muted tiny" style={{ marginTop: 6 }}>
             Placed {fmtDate(order.createdAt)} · {order.shippingAddress.name}
           </div>

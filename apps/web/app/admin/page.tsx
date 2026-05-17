@@ -38,7 +38,7 @@ export default function AdminDashboard() {
       <div className="admin-head">
         <div>
           <div className="label" style={{ marginBottom: 6 }}>Overview</div>
-          <h1 className="h-1" style={{ margin: 0 }}>Dashboard</h1>
+          <h1 className="heading-1" style={{ margin: 0 }}>Dashboard</h1>
         </div>
         <div className="muted tiny mono">{today}</div>
       </div>
@@ -69,7 +69,7 @@ export default function AdminDashboard() {
       <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 32 }}>
         <section>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <h2 className="h-3" style={{ margin: 0 }}>Recent orders</h2>
+            <h2 className="heading-3" style={{ margin: 0 }}>Recent orders</h2>
             <Link className="btn link" href="/admin/orders">View all</Link>
           </div>
           <table className="admin-table">
@@ -106,7 +106,7 @@ export default function AdminDashboard() {
 
         <section>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <h2 className="h-3" style={{ margin: 0 }}>Inventory alerts</h2>
+            <h2 className="heading-3" style={{ margin: 0 }}>Inventory alerts</h2>
             <Link className="btn link" href="/admin/products">Manage</Link>
           </div>
           <div style={{ background: "var(--paper)", border: "1px solid var(--line)", borderRadius: "var(--r-2)", overflow: "hidden" }}>

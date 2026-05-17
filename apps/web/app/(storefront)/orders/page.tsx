@@ -22,7 +22,7 @@ export default function OrdersPage() {
         <div className="label" style={{ marginBottom: 10 }}>
           Your account
         </div>
-        <h1 className="h-1" style={{ margin: 0 }}>
+        <h1 className="heading-1" style={{ margin: 0 }}>
           Order history
         </h1>
         <p className="body muted" style={{ maxWidth: 480, marginTop: 10 }}>
@@ -38,7 +38,7 @@ export default function OrdersPage() {
         {orders.length === 0 ? (
           <div className="empty">
             <Icon name="package" className="xl" />
-            <div className="h-3">No orders yet</div>
+            <div className="heading-3">No orders yet</div>
             <button className="btn ghost" onClick={() => router.push("/")}>
               Start shopping
             </button>

@@ -19,7 +19,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   if (!product) {
     return (
       <div className="empty">
-        <div className="h-3">Product not found</div>
+        <div className="heading-3">Product not found</div>
       </div>
     );
   }

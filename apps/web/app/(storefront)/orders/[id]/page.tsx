@@ -36,7 +36,7 @@ export default function OrderDetailPage({
   if (order === null) {
     return (
       <div className="empty" style={{ padding: "120px 0" }}>
-        <div className="h-3">Order not found</div>
+        <div className="heading-3">Order not found</div>
         <button className="btn ghost" onClick={() => router.push("/orders")}>
           Back
         </button>
@@ -69,7 +69,7 @@ export default function OrderDetailPage({
             Order
           </div>
           <h1
-            className="h-1 mono"
+            className="heading-1 mono"
             style={{ margin: 0, letterSpacing: 0 }}
           >
             {order.id}

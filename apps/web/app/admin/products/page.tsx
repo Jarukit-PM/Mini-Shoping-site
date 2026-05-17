@@ -55,7 +55,7 @@ export default function AdminProductsPage() {
       <div className="admin-head">
         <div>
           <div className="label" style={{ marginBottom: 6 }}>Catalog</div>
-          <h1 className="h-1" style={{ margin: 0 }}>Products</h1>
+          <h1 className="heading-1" style={{ margin: 0 }}>Products</h1>
           <div className="muted tiny" style={{ marginTop: 6 }}>{products.length} items in catalog</div>
         </div>
         <button className="btn accent" onClick={() => router.push("/admin/products/new")}>

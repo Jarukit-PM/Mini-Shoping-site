@@ -75,12 +75,12 @@ export function ProductDetailClient({ product }: { product: Product }) {
               {product.sku}
             </span>
           </div>
-          <h1 className="h-1" style={{ margin: "0 0 64px", lineHeight: 1.25, overflowWrap: "break-word", wordBreak: "break-word" }}>
+          <h1 className="heading-1" style={{ margin: "0 0 64px", lineHeight: 1.25, overflowWrap: "break-word", wordBreak: "break-word" }}>
             {product.name}
           </h1>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <span
-              className="h-3"
+              className="heading-3"
               style={{ fontVariantNumeric: "tabular-nums" }}
             >
               {formatPriceUSD(product.priceCents)}
