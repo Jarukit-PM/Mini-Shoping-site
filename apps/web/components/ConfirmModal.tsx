@@ -26,7 +26,7 @@ export function ConfirmModal({
     <div className="modal-scrim" onClick={onCancel}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
-          <h3 style={{ margin: 0 }} className="h-3">
+          <h3 style={{ margin: 0 }} className="heading-3">
             {title}
           </h3>
         </div>

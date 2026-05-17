@@ -56,7 +56,7 @@ export default function AdminOrdersPage() {
       <div className="admin-head">
         <div>
           <div className="label" style={{ marginBottom: 6 }}>Fulfillment</div>
-          <h1 className="h-1" style={{ margin: 0 }}>Orders</h1>
+          <h1 className="heading-1" style={{ margin: 0 }}>Orders</h1>
           <div className="muted tiny" style={{ marginTop: 6 }}>{orders.length} total orders</div>
         </div>
       </div>

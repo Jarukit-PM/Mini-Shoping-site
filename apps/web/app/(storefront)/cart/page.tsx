@@ -46,7 +46,7 @@ export default function CartPage() {
     return (
       <div className="empty" style={{ padding: "120px 0" }}>
         <Icon name="bag" className="xl" />
-        <div className="h-2">Your bag is empty</div>
+        <div className="heading-2">Your bag is empty</div>
         <button className="btn ghost" onClick={() => router.push("/")}>
           Back to shop
         </button>
@@ -67,7 +67,7 @@ export default function CartPage() {
         padding: "40px 40px 80px",
       }}
     >
-      <h1 className="h-1" style={{ margin: "0 0 24px" }}>
+      <h1 className="heading-1" style={{ margin: "0 0 24px" }}>
         Your bag
       </h1>
       <div

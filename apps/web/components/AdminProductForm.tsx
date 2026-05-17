@@ -131,7 +131,7 @@ export function AdminProductForm({ existing }: AdminProductFormProps) {
           <div className="label" style={{ marginBottom: 6 }}>
             {isNew ? "New product" : "Edit product"}
           </div>
-          <h1 className="h-1" style={{ margin: 0 }}>
+          <h1 className="heading-1" style={{ margin: 0 }}>
             {isNew ? "Add a new product" : form.name}
           </h1>
           {!isNew && (
@@ -156,7 +156,7 @@ export function AdminProductForm({ existing }: AdminProductFormProps) {
       <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 40, alignItems: "flex-start" }}>
         {/* Form fields */}
         <div style={{ display: "flex", flexDirection: "column", gap: 18, background: "var(--paper)", border: "1px solid var(--line)", borderRadius: "var(--r-2)", padding: 28 }}>
-          <h2 className="h-3" style={{ margin: 0 }}>Details</h2>
+          <h2 className="heading-3" style={{ margin: 0 }}>Details</h2>
 
           <div className="field">
             <label>Name</label>

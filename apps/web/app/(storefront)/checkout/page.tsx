@@ -59,7 +59,7 @@ export default function CheckoutPage() {
     return (
       <div className="empty" style={{ padding: "120px 0" }}>
         <Icon name="bag" className="xl" />
-        <div className="h-3">Your bag is empty</div>
+        <div className="heading-3">Your bag is empty</div>
         <button className="btn ghost" onClick={() => router.push("/")}>
           Back to shop
         </button>
@@ -151,7 +151,7 @@ export default function CheckoutPage() {
         <button className="btn link" onClick={() => router.push("/")}>
           <Icon name="arrowL" /> Continue shopping
         </button>
-        <h1 className="h-1" style={{ margin: "14px 0 0" }}>
+        <h1 className="heading-1" style={{ margin: "14px 0 0" }}>
           Checkout
         </h1>
       </section>

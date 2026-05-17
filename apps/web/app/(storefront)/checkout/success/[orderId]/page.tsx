@@ -35,7 +35,7 @@ export default function ConfirmationPage({
     return (
       <div className="empty" style={{ padding: "120px 0" }}>
         <Icon name="alert" className="xl" />
-        <div className="h-3">No order to show</div>
+        <div className="heading-3">No order to show</div>
         <button className="btn ghost" onClick={() => router.push("/")}>
           Back to shop
         </button>

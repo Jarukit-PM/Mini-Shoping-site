@@ -48,7 +48,7 @@ export function CartDrawer({
       <div className={`drawer ${open ? "open" : ""}`}>
         {/* Header */}
         <div className="drawer-head">
-          <div className="h-3">Your bag</div>
+          <div className="heading-3">Your bag</div>
           <button className="icon-btn" onClick={onClose}>
             <Icon name="x" />
           </button>
